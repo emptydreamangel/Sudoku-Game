@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sudoku Game</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Sudoku Game</h1>
+
+      <div class="game-controls">
+        <div class="difficulty">
+          <label for="difficulty">Difficulty:</label>
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        <button id="new-game">New Game</button>
+        <button id="check">Check Solution</button>
+        <button id="solve">Solve</button>
+        <button id="hint">Hint</button>
+        <button id="show-candidates">Show Candidates</button>
+      </div>
+
+      <div class="status" id="status">Start a new game!</div>
+
+      <div class="sudoku-container">
+        <div id="sudoku-board" class="sudoku-board"></div>
+
+        <div class="number-pad">
+          <button class="num-btn" data-num="1">1</button>
+          <button class="num-btn" data-num="2">2</button>
+          <button class="num-btn" data-num="3">3</button>
+          <button class="num-btn" data-num="4">4</button>
+          <button class="num-btn" data-num="5">5</button>
+          <button class="num-btn" data-num="6">6</button>
+          <button class="num-btn" data-num="7">7</button>
+          <button class="num-btn" data-num="8">8</button>
+          <button class="num-btn" data-num="9">9</button>
+          <button class="num-btn erase" data-num="0">Erase</button>
+        </div>
+      </div>
+
+      <div class="instructions">
+        <h3>How to Play:</h3>
+        <ol>
+          <li>Select a difficulty and click "New Game"</li>
+          <li>Click on a cell to select it</li>
+          <li>Enter a number using the number pad or keyboard</li>
+          <li>Fill all cells correctly to win!</li>
+        </ol>
+        <p>
+          Each row, column, and 3x3 box must contain numbers 1-9 without
+          repetition.
+        </p>
+      </div>
+
+      <div class="timer">
+        Time: <span id="minutes">00</span>:<span id="seconds">00</span>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
