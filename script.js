@@ -272,13 +272,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!selectedCell) return;
 
     const index = parseInt(selectedCell.dataset.index);
-    const row = Math.floor(index / 9);
-    const col = index % 9;
-
-    // Check if the number is valid
-    const gridSnapshot = getCurrentGrid();
-    gridSnapshot[index] = 0;
-    const isValid = isValidPlacement(gridSnapshot, row, col, num);
+    const isValid = isValidMoveAtIndex(currentGrid, index, num);
 
     selectedCell.textContent = num;
     currentGrid[index] = num;
@@ -345,20 +339,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Check the current solution
   function checkSolution(silent = false) {
-    const currentGrid = getCurrentGrid();
+    const gridState = getCurrentGrid();
 
     // Check if the grid is valid
     for (let i = 0; i < 81; i++) {
-      const row = Math.floor(i / 9);
-      const col = i % 9;
-      const value = currentGrid[i];
+      const value = gridState[i];
 
       if (value === 0) continue;
 
-      // Temporarily remove the value to check if it's valid
-      currentGrid[i] = 0;
-      const isValid = isValidPlacement(currentGrid, row, col, value);
-      currentGrid[i] = value;
+      const isValid = isValidMoveAtIndex(gridState, i, value);
 
       if (!isValid) {
         if (!silent) {
@@ -587,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to calculate candidates for each empty cell
   function calculateCandidates() {
     const candidates = [];
-    const currentGrid = getCurrentGrid();
+    const gridState = getCurrentGrid();
 
     // Initialize candidates array for each cell
     for (let row = 0; row < 9; row++) {
@@ -597,13 +586,13 @@ document.addEventListener("DOMContentLoaded", () => {
         candidates[row][col] = [];
 
         // If the cell is not empty, no candidates
-        if (currentGrid[index] !== 0) {
+        if (gridState[index] !== 0) {
           continue;
         }
 
         // Check each number 1-9
         for (let num = 1; num <= 9; num++) {
-          if (isValidPlacement(currentGrid, row, col, num)) {
+          if (isValidPlacement(gridState, row, col, num)) {
             candidates[row][col].push(num);
           }
         }
@@ -624,6 +613,39 @@ document.addEventListener("DOMContentLoaded", () => {
       showCandidatesBtn.classList.remove("active");
       clearCandidatesDisplay();
     }
+  }
+
+  // Validate a value at an index while ignoring the current cell's old value
+  function isValidMoveAtIndex(grid, index, num) {
+    const row = Math.floor(index / 9);
+    const col = index % 9;
+
+    for (let c = 0; c < 9; c++) {
+      const checkIndex = row * 9 + c;
+      if (checkIndex !== index && grid[checkIndex] === num) {
+        return false;
+      }
+    }
+
+    for (let r = 0; r < 9; r++) {
+      const checkIndex = r * 9 + col;
+      if (checkIndex !== index && grid[checkIndex] === num) {
+        return false;
+      }
+    }
+
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const checkIndex = (boxRow + r) * 9 + (boxCol + c);
+        if (checkIndex !== index && grid[checkIndex] === num) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   // Function to update candidates display
