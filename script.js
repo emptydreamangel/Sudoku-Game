@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const checkBtn = document.getElementById("check");
   const solveBtn = document.getElementById("solve");
   const hintBtn = document.getElementById("hint");
+  const showCandidatesBtn = document.getElementById("show-candidates");
   const statusDiv = document.getElementById("status");
   const minutesSpan = document.getElementById("minutes");
   const secondsSpan = document.getElementById("seconds");
@@ -20,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let seconds = 0;
   let minutes = 0;
   let showingCandidates = false;
+  let currentGrid = Array(81).fill(0);
 
   // Initialize the game
   createEmptyBoard();
@@ -110,9 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     checkBtn.addEventListener("click", checkSolution);
     solveBtn.addEventListener("click", solvePuzzle);
     hintBtn.addEventListener("click", giveHint);
-    document
-      .getElementById("show-candidates")
-      .addEventListener("click", toggleCandidates);
+    showCandidatesBtn.addEventListener("click", toggleCandidates);
   }
 
   // Start a new game
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     startTimer();
     gameActive = true;
     showingCandidates = false;
-    document.getElementById("show-candidates").classList.remove("active");
+    showCandidatesBtn.classList.remove("active");
     statusDiv.textContent = "Game started! Good luck!";
   }
 
@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gameActive = false;
     puzzle = [];
     solution = [];
+    currentGrid = Array(81).fill(0);
     createEmptyBoard();
   }
 
@@ -260,6 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cell.textContent = "";
         cell.classList.remove("given");
       }
+      currentGrid[index] = value;
 
       cell.classList.remove("selected", "error", "hint", "same-number");
     });
@@ -270,13 +272,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!selectedCell) return;
 
     const index = parseInt(selectedCell.dataset.index);
-    const row = Math.floor(index / 9);
-    const col = index % 9;
-
-    // Check if the number is valid
-    const isValid = isValidPlacement(getCurrentGrid(), row, col, num);
+    const isValid = isValidMoveAtIndex(currentGrid, index, num);
 
     selectedCell.textContent = num;
+    currentGrid[index] = num;
 
     if (!isValid) {
       selectedCell.classList.add("error");
@@ -303,7 +302,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function clearCell() {
     if (!selectedCell) return;
 
+    const index = parseInt(selectedCell.dataset.index);
     selectedCell.textContent = "";
+    currentGrid[index] = 0;
     selectedCell.classList.remove("error", "hint");
     highlightSameNumbers(null);
 
@@ -328,39 +329,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Get the current state of the grid
   function getCurrentGrid() {
-    const grid = Array(81).fill(0);
-    const cells = board.querySelectorAll(".cell");
-
-    cells.forEach((cell, index) => {
-      const value = cell.textContent;
-      grid[index] = value ? parseInt(value) : 0;
-    });
-
-    return grid;
+    return [...currentGrid];
   }
 
   // Check if the board is completely filled
   function isBoardFilled() {
-    const cells = board.querySelectorAll(".cell");
-    return Array.from(cells).every((cell) => cell.textContent !== "");
+    return currentGrid.every((value) => value !== 0);
   }
 
   // Check the current solution
   function checkSolution(silent = false) {
-    const currentGrid = getCurrentGrid();
+    const gridState = getCurrentGrid();
 
     // Check if the grid is valid
     for (let i = 0; i < 81; i++) {
-      const row = Math.floor(i / 9);
-      const col = i % 9;
-      const value = currentGrid[i];
+      const value = gridState[i];
 
       if (value === 0) continue;
 
-      // Temporarily remove the value to check if it's valid
-      currentGrid[i] = 0;
-      const isValid = isValidPlacement(currentGrid, row, col, value);
-      currentGrid[i] = value;
+      const isValid = isValidMoveAtIndex(gridState, i, value);
 
       if (!isValid) {
         if (!silent) {
@@ -394,7 +381,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // If showing candidates, turn it off
     if (showingCandidates) {
       showingCandidates = false;
-      document.getElementById("show-candidates").classList.remove("active");
+      showCandidatesBtn.classList.remove("active");
       clearCandidatesDisplay();
     }
 
@@ -403,6 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cells.forEach((cell, index) => {
       if (!cell.classList.contains("given")) {
         cell.textContent = solution[index];
+        currentGrid[index] = solution[index];
         cell.classList.remove(
           "error",
           "hint",
@@ -449,6 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const correctValue = solution[index];
 
     selectedCell.textContent = correctValue;
+    currentGrid[index] = correctValue;
     selectedCell.classList.add("hint");
     selectedCell.classList.remove("error");
 
@@ -587,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to calculate candidates for each empty cell
   function calculateCandidates() {
     const candidates = [];
-    const currentGrid = getCurrentGrid();
+    const gridState = getCurrentGrid();
 
     // Initialize candidates array for each cell
     for (let row = 0; row < 9; row++) {
@@ -597,19 +586,15 @@ document.addEventListener("DOMContentLoaded", () => {
         candidates[row][col] = [];
 
         // If the cell is not empty, no candidates
-        if (currentGrid[index] !== 0) {
+        if (gridState[index] !== 0) {
           continue;
         }
 
         // Check each number 1-9
         for (let num = 1; num <= 9; num++) {
-          // Temporarily place the number
-          currentGrid[index] = num;
-          if (isValidPlacement(currentGrid, row, col, num)) {
+          if (isValidPlacement(gridState, row, col, num)) {
             candidates[row][col].push(num);
           }
-          // Remove the number
-          currentGrid[index] = 0;
         }
       }
     }
@@ -620,15 +605,47 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to toggle candidates display
   function toggleCandidates() {
     showingCandidates = !showingCandidates;
-    const button = document.getElementById("show-candidates");
 
     if (showingCandidates) {
-      button.classList.add("active");
+      showCandidatesBtn.classList.add("active");
       updateCandidatesDisplay();
     } else {
-      button.classList.remove("active");
+      showCandidatesBtn.classList.remove("active");
       clearCandidatesDisplay();
     }
+  }
+
+  // Validate a value at an index while ignoring the current cell's old value
+  function isValidMoveAtIndex(grid, index, num) {
+    const row = Math.floor(index / 9);
+    const col = index % 9;
+
+    for (let c = 0; c < 9; c++) {
+      const checkIndex = row * 9 + c;
+      if (checkIndex !== index && grid[checkIndex] === num) {
+        return false;
+      }
+    }
+
+    for (let r = 0; r < 9; r++) {
+      const checkIndex = r * 9 + col;
+      if (checkIndex !== index && grid[checkIndex] === num) {
+        return false;
+      }
+    }
+
+    const boxRow = Math.floor(row / 3) * 3;
+    const boxCol = Math.floor(col / 3) * 3;
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        const checkIndex = (boxRow + r) * 9 + (boxCol + c);
+        if (checkIndex !== index && grid[checkIndex] === num) {
+          return false;
+        }
+      }
+    }
+
+    return true;
   }
 
   // Function to update candidates display
@@ -643,7 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const col = index % 9;
 
       // Skip filled cells
-      if (cell.textContent !== "") return;
+      if (currentGrid[index] !== 0) return;
 
       // Create candidates container
       const candidatesContainer = document.createElement("div");
@@ -679,7 +696,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Restore the original number if it exists in the current state
       const index = parseInt(cell.dataset.index);
-      const currentGrid = getCurrentGrid();
       const value = currentGrid[index];
 
       if (value !== 0) {
